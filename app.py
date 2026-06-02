@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-st.title("CSV 自動分析アプリ（順位表示版）")
-st.write("CSV の中身が分からなくても、自動で表示できるアプリです。")
+st.title("CSV 自動分析アプリ（ID固定・順位表示版）")
+st.write("ID を選んで、競技ごとの順位を確認できるアプリです。")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -23,15 +23,22 @@ if uploaded:
     # 数値列の0をNaNに置き換え（0は無効データとして扱う）
     df[numeric_cols] = df[numeric_cols].replace(0, pd.NA)
 
-    st.subheader("② 項目を選んで順位を表示")
+    # ID 列があるか確認
+    if "ID" not in df.columns:
+        st.error("CSV に ID 列がありません。")
+        st.stop()
 
-    # 項目選択（数値列のみ）
-    target_col = st.selectbox("競技（項目）を選択", numeric_cols)
-
-    # 性別フィルタ
+    # 性別列があるか確認
     has_gender = "性別" in df.columns
+
+    # ② 競技（数値列）を選択
+    st.subheader("③ 競技（項目）を選択")
+    target_col = st.selectbox("競技を選択", numeric_cols)
+
+    # ③ 性別フィルタ
+    st.subheader("④ 表示対象を選択")
     if has_gender:
-        gender_option = st.radio("表示対象", ["全体", "男", "女"])
+        gender_option = st.radio("対象", ["全体", "男", "女"])
         if gender_option == "男":
             df_filtered = df[df["性別"] == "男"]
         elif gender_option == "女":
@@ -42,20 +49,26 @@ if uploaded:
         st.info("性別列がないため、全体のみ表示します。")
         df_filtered = df
 
-    # 上位 or 下位 の切り替え
+    # ④ 上位 or 下位 の切り替え
     order_option = st.radio("順位の種類", ["上位", "下位"])
-
-    # 並び替え（上位＝降順、下位＝昇順）
     ascending_flag = True if order_option == "下位" else False
+
+    # 並び替え
     df_filtered = df_filtered.sort_values(by=target_col, ascending=ascending_flag)
 
+    # 表示する列を3つに限定
+    display_cols = ["ID"]
+    if has_gender:
+        display_cols.append("性別")
+    display_cols.append(target_col)
+
     # 上位/下位10人を表示（タイトルは表示しない）
-    st.dataframe(df_filtered.head(10))
+    st.subheader("⑤ 順位表（上位10人）")
+    st.dataframe(df_filtered[display_cols].head(10))
 
     # 11位以下の表示切り替え
     if st.checkbox("10位以下を表示する"):
-        st.dataframe(df_filtered.iloc[10:])
+        st.dataframe(df_filtered[display_cols].iloc[10:])
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
-
