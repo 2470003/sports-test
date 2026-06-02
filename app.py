@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 
-st.title("CSV 自動分析アプリ（順位表示版）")
-st.write("CSV の中身が分からなくても、自動で順位を表示できるアプリです。")
+st.title("CSV 自動分析アプリ（並び替え版）")
+st.write("CSV の中身が分からなくても、自動で並び替えて表示できるアプリです。")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -16,45 +16,35 @@ if uploaded:
     st.subheader("① データプレビュー")
     st.dataframe(df.head())
 
-    # 数値列とカテゴリ列を自動判定
+    # 数値列を抽出
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    object_cols = df.select_dtypes(include="object").columns.tolist()
 
-    # 数値列の0をNaNに置き換え（0は無効データとして扱う）
+    # 数値列の0をNaNに置き換え
     df[numeric_cols] = df[numeric_cols].replace(0, pd.NA)
 
     # 性別列があるか確認
     has_gender = "性別" in df.columns
 
-    st.subheader("② 項目を選んで順位を表示")
+    st.subheader("② 並び替え設定")
 
-    # 項目選択（数値列のみ）
-    target_col = st.selectbox("順位を表示する項目を選択", numeric_cols)
+    # 並び替え対象の項目（数値列）を選択
+    sort_col = st.selectbox("並び替える項目を選択してください", numeric_cols)
 
-    # 性別フィルタ
+    # 上位 or 下位 の切り替え
+    order_option = st.radio("並び順", ["上位（大きい順）", "下位（小さい順）"])
+    ascending_flag = True if order_option == "下位（小さい順）" else False
+
+    # 並び替え
+    df_sorted = df.sort_values(by=sort_col, ascending=ascending_flag)
+
+    # 表示する列を限定
+    display_cols = ["ID"]
     if has_gender:
-        gender_option = st.radio("表示対象", ["全体", "男", "女"])
-        if gender_option == "男":
-            df_filtered = df[df["性別"] == "男"]
-        elif gender_option == "女":
-            df_filtered = df[df["性別"] == "女"]
-        else:
-            df_filtered = df
-    else:
-        st.info("性別列がないため、全体のみ表示します。")
-        df_filtered = df
+        display_cols.append("性別")
+    display_cols.append(sort_col)
 
-    # 順位計算（大きい方が良いと仮定）
-    df_filtered = df_filtered.sort_values(by=target_col, ascending=False)
-
-    # 上位10人
-    st.subheader("③ 上位10人")
-    st.dataframe(df_filtered.head(10))
-
-    # 11位以下の表示切り替え
-    if st.checkbox("10位以下を表示する"):
-        st.subheader("④ 10位以下")
-        st.dataframe(df_filtered.iloc[10:])
+    st.subheader("③ 並び替え結果")
+    st.dataframe(df_sorted[display_cols])
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
