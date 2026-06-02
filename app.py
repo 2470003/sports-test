@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 
-st.title("CSV 自動分析アプリ（汎用版）")
-st.write("CSV の中身が分からなくても、自動で分析できるアプリです。")
+st.title("CSV 自動分析アプリ（順位表示版）")
+st.write("CSV の中身が分からなくても、自動で順位を表示できるアプリです。")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -21,43 +20,41 @@ if uploaded:
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     object_cols = df.select_dtypes(include="object").columns.tolist()
 
-    st.write("検出された数値列:", numeric_cols)
-    st.write("検出されたカテゴリ列:", object_cols)
+    # 数値列の0をNaNに置き換え（0は無効データとして扱う）
+    df[numeric_cols] = df[numeric_cols].replace(0, pd.NA)
 
-    # ====== 基本統計量 ======
-    if len(numeric_cols) > 0:
-        st.subheader("② 数値列の基本統計量")
-        st.dataframe(df[numeric_cols].describe())
+    # 性別列があるか確認
+    has_gender = "性別" in df.columns
 
-    # ====== 散布図（ユーザーが列を選択） ======
-    if len(numeric_cols) >= 2:
-        st.subheader("③ 散布図（任意の2列）")
-        x_col = st.selectbox("X軸を選択", numeric_cols)
-        y_col = st.selectbox("Y軸を選択", numeric_cols, index=1)
+    st.subheader("② 項目を選んで順位を表示")
 
-        fig, ax = plt.subplots()
-        ax.scatter(df[x_col], df[y_col])
-        ax.set_xlabel(x_col)
-        ax.set_ylabel(y_col)
-        st.pyplot(fig)
+    # 項目選択（数値列のみ）
+    target_col = st.selectbox("順位を表示する項目を選択", numeric_cols)
 
-    # ====== ヒストグラム ======
-    if len(numeric_cols) > 0:
-        st.subheader("④ ヒストグラム（任意の1列）")
-        hist_col = st.selectbox("ヒストグラムの列を選択", numeric_cols)
+    # 性別フィルタ
+    if has_gender:
+        gender_option = st.radio("表示対象", ["全体", "男", "女"])
+        if gender_option == "男":
+            df_filtered = df[df["性別"] == "男"]
+        elif gender_option == "女":
+            df_filtered = df[df["性別"] == "女"]
+        else:
+            df_filtered = df
+    else:
+        st.info("性別列がないため、全体のみ表示します。")
+        df_filtered = df
 
-        fig2, ax2 = plt.subplots()
-        ax2.hist(df[hist_col], bins=20)
-        ax2.set_xlabel(hist_col)
-        ax2.set_ylabel("Count")
-        st.pyplot(fig2)
+    # 順位計算（大きい方が良いと仮定）
+    df_filtered = df_filtered.sort_values(by=target_col, ascending=False)
 
-    # ====== カテゴリ列の集計 ======
-    if len(object_cols) > 0:
-        st.subheader("⑤ カテゴリ列の集計")
-        cat_col = st.selectbox("集計するカテゴリ列を選択", object_cols)
+    # 上位10人
+    st.subheader("③ 上位10人")
+    st.dataframe(df_filtered.head(10))
 
-        st.write(df[cat_col].value_counts())
+    # 11位以下の表示切り替え
+    if st.checkbox("10位以下を表示する"):
+        st.subheader("④ 10位以下")
+        st.dataframe(df_filtered.iloc[10:])
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
