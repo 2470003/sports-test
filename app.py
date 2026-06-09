@@ -74,7 +74,7 @@ if uploaded:
         st.dataframe(pd.DataFrame(result_list, columns=["種目", "スコア", "順位"]))
 
     # ============================================================
-    # ② 種目モード（順位×スコア散布図）
+    # ② 種目モード（散布図なし）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -121,45 +121,6 @@ if uploaded:
 
         st.subheader("⑥ 結果表示")
         st.dataframe(pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"]))
-
-        # ============================================================
-        # ⑦ 散布図（横＝順位 × 縦＝スコア）
-        # ============================================================
-        st.subheader("⑦ 散布図（順位 × スコア）")
-
-        scatter_df = df_filtered[[target_col, "性別"]].dropna()
-
-        # 順位計算（小さい順＝上位）
-        scatter_df["順位"] = scatter_df[target_col].rank(method="min", ascending=True)
-
-        fig, ax = plt.subplots(figsize=(8, 5))
-
-        # 男（青）
-        male_df = scatter_df[scatter_df["性別"] == "男"]
-        ax.scatter(
-            male_df["順位"] + np.random.normal(0, 0.1, size=len(male_df)),
-            male_df[target_col],
-            color="#66CCFF",
-            alpha=0.6,
-            label="男"
-        )
-
-        # 女（薄い赤）
-        female_df = scatter_df[scatter_df["性別"] == "女"]
-        ax.scatter(
-            female_df["順位"] + np.random.normal(0, 0.1, size=len(female_df)),
-            female_df[target_col],
-            color="#FF9999",
-            alpha=0.6,
-            label="女"
-        )
-
-        ax.set_title(f"{target_col} の散布図（順位 × スコア）")
-        ax.set_xlabel("順位（1位＝左）")
-        ax.set_ylabel("スコア")
-        ax.legend()
-
-        st.pyplot(fig)
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
