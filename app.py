@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("個人順位 & 種目別順位アプリ（散布図付き・完全版）")
+st.title("個人順位 & 種目別順位アプリ（ジッター散布図付き）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -88,7 +88,7 @@ if uploaded:
         st.dataframe(result_df)
 
     # ============================================================
-    # ② 種目で表示するモード（散布図追加）
+    # ② 種目で表示するモード（ジッター散布図追加）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -149,23 +149,30 @@ if uploaded:
         st.dataframe(result_df)
 
         # ============================================================
-        # ⑦ 散布図（横軸＝最小〜最大、縦軸＝スコア）
+        # ⑦ ジッター散布図（密度が見える）
         # ============================================================
-        st.subheader("⑦ 散布図（スコア分布）")
+        st.subheader("⑦ 散布図（ジッター付き）")
 
         scatter_df = df_filtered[[target_col]].dropna()
 
-        # 散布図作成
+        # ジッター（横方向に少しズラす）
+        jitter = np.random.normal(0, 0.02, size=len(scatter_df))
+
         fig, ax = plt.subplots(figsize=(8, 5))
 
-        ax.scatter(scatter_df[target_col], scatter_df[target_col], alpha=0.6)
+        ax.scatter(
+            scatter_df[target_col] + jitter,  # 横に少しズラす
+            scatter_df[target_col],
+            alpha=0.5
+        )
 
         ax.set_title(f"{target_col} の散布図（{gender_option}）")
         ax.set_xlabel(f"{target_col}（最小〜最大）")
         ax.set_ylabel("スコア")
 
         # 横軸を最小〜最大に設定
-        ax.set_xlim(scatter_df[target_col].min(), scatter_df[target_col].max())
+        ax.set_xlim(scatter_df[target_col].min() - 0.1,
+                    scatter_df[target_col].max() + 0.1)
 
         st.pyplot(fig)
 
