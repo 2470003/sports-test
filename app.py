@@ -59,22 +59,24 @@ if uploaded:
 
         for col in numeric_cols:
             series = df_filtered[col].dropna()
-            sorted_series = series.sort_values(ascending=True)
+
+            # 同率順位（小さい順＝上位）
+            rank_series = df_filtered[col].rank(method="min", ascending=True)
 
             my_score = df.loc[selected_id, col]
             if pd.isna(my_score):
                 result_list.append([col, "データなし", "-"])
                 continue
 
-            rank = sorted_series.index.get_loc(selected_id) + 1
-            total = len(sorted_series)
+            rank = int(rank_series[selected_id])
+            total = len(rank_series.dropna())
 
             result_list.append([col, my_score, f"{rank}/{total}"])
 
         st.dataframe(pd.DataFrame(result_list, columns=["種目", "スコア", "順位"]))
 
     # ============================================================
-    # ② 種目モード（散布図なし）
+    # ② 種目モード（同率順位対応）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -100,24 +102,20 @@ if uploaded:
         top10 = df_sorted.head(10)
 
         result = []
+
+        # 全員の順位（同率対応）
+        rank_series = df_filtered[target_col].rank(method="min", ascending=ascending_flag)
+
         for idx, row in top10.iterrows():
             score = row[target_col]
             if pd.isna(score):
                 continue
 
-            series = df_filtered[target_col].dropna()
-            sorted_series = series.sort_values(ascending=ascending_flag)
-
-            rank = sorted_series.index.get_loc(idx) + 1
-            total = len(sorted_series)
-
-            if ascending_flag:
-                rank_display = f"{rank}/{total}"
-            else:
-                rank_display = f"{total - rank + 1}/{total}"
+            rank = int(rank_series[idx])
+            total = len(rank_series.dropna())
 
             gender = row["性別"] if has_gender else "-"
-            result.append([idx, gender, score, rank_display])
+            result.append([idx, gender, score, f"{rank}/{total}"])
 
         st.subheader("⑥ 結果表示")
         st.dataframe(pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"]))
