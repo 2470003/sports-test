@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.title("個人順位 & 種目別順位アプリ（順位表示修正版）")
+st.title("個人順位 & 種目別順位アプリ（完全修正版）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -69,13 +69,13 @@ if uploaded:
         for col in numeric_cols:
             series = df_filtered[col].dropna()
 
-            # 並び替え（大きい方が良い）
-            sorted_series = series.sort_values(ascending=False)
+            # 上位＝小さい順
+            sorted_series = series.sort_values(ascending=True)
 
             my_score = df.loc[selected_id, col]
 
             if pd.isna(my_score):
-                result_list.append([col, "データなし", "-", "-"])
+                result_list.append([col, "データなし", "-"])
                 continue
 
             rank = sorted_series.index.get_loc(selected_id) + 1
@@ -110,10 +110,10 @@ if uploaded:
         st.subheader("⑤ 上位/下位を選択")
         order_option = st.radio("並び順", ["上位10人", "下位10人"])
 
-        # 上位 → 大きい順 / 下位 → 小さい順
-        ascending_flag = True if order_option == "下位10人" else False
+        # 上位 → 小さい順 / 下位 → 大きい順
+        ascending_flag = True if order_option == "上位10人" else False
 
-        # 並び替え
+        # 並び替え（上位＝小さい順、下位＝大きい順）
         df_sorted = df_filtered.sort_values(by=target_col, ascending=ascending_flag)
 
         # 上位/下位10人
@@ -126,21 +126,18 @@ if uploaded:
             if pd.isna(score):
                 continue
 
-            # 順位計算
+            # 全体の順位計算
             series = df_filtered[target_col].dropna()
-
-            # 上位 → 大きい順 / 下位 → 小さい順
             sorted_series = series.sort_values(ascending=ascending_flag)
 
             rank = sorted_series.index.get_loc(idx) + 1
             total = len(sorted_series)
 
-            # 上位 → 1/388 の形式  
-            # 下位 → 388/388 の形式  
-            if ascending_flag:  # 下位
-                rank_display = f"{total - rank + 1}/{total}"
-            else:  # 上位
+            # 正しい順位表示
+            if ascending_flag:  # 上位（小さい順）
                 rank_display = f"{rank}/{total}"
+            else:  # 下位（大きい順）
+                rank_display = f"{total - rank + 1}/{total}"
 
             gender = row["性別"] if has_gender else "-"
 
@@ -152,4 +149,3 @@ if uploaded:
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
-
