@@ -11,7 +11,7 @@ font_path = "ipaexg.ttf"  # ← GitHub に置いたフォント
 font_manager.fontManager.addfont(font_path)
 plt.rcParams["font.family"] = "IPAexGothic"
 
-st.title("個人順位 & 種目別順位アプリ（順位×スコア散布図付き）")
+st.title("スポーツテスト測定")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
