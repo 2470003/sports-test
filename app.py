@@ -7,9 +7,9 @@ from matplotlib import font_manager
 # -------------------------
 # 日本語フォント設定（文字化け対策）
 # -------------------------
-font_path = "/usr/share/fonts/truetype/ipafont-gothic/ipagp.ttf"
+font_path = "ipaexg.ttf"  # ← GitHub に置いたフォント
 font_manager.fontManager.addfont(font_path)
-plt.rcParams["font.family"] = "IPAGothic"
+plt.rcParams["font.family"] = "IPAexGothic"
 
 st.title("個人順位 & 種目別順位アプリ（色分けジッター散布図付き）")
 
@@ -129,16 +129,14 @@ if uploaded:
 
         scatter_df = df_filtered[[target_col, "性別"]].dropna()
 
-        jitter = np.random.normal(0, 0.02, size=len(scatter_df))
-
         fig, ax = plt.subplots(figsize=(8, 5))
 
         # 男（青）
         male_df = scatter_df[scatter_df["性別"] == "男"]
         ax.scatter(
-            male_df[target_col] + np.random.normal(0, 0.02, size=len(male_df)),
+            male_df[target_col] + np.random.normal(0, 0.03, size=len(male_df)),
             male_df[target_col],
-            color="#66CCFF",  # 水色
+            color="#66CCFF",
             alpha=0.6,
             label="男"
         )
@@ -146,9 +144,9 @@ if uploaded:
         # 女（薄い赤）
         female_df = scatter_df[scatter_df["性別"] == "女"]
         ax.scatter(
-            female_df[target_col] + np.random.normal(0, 0.02, size=len(female_df)),
+            female_df[target_col] + np.random.normal(0, 0.03, size=len(female_df)),
             female_df[target_col],
-            color="#FF9999",  # 薄い赤
+            color="#FF9999",
             alpha=0.6,
             label="女"
         )
