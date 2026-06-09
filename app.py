@@ -1,20 +1,24 @@
 import streamlit as st
 import pandas as pd
 
-st.title("CSV 自動分析アプリ（データプレビュー版）")
-st.write("CSV の中身が分からなくても、まずはデータを確認できます。")
+st.title("CSV 参照アプリ（Streamlit版）")
+st.write("CSV をアップロードして内容を確認できます。")
 
+# --- CSV アップロード ---
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
 if uploaded:
-    df = pd.read_csv(uploaded)
+    # 2行目（単位行）をスキップして読み込み
+    df = pd.read_csv(uploaded, skiprows=[1])
 
-    # 2行目が単位行などの場合 → 自動削除
-    if df.iloc[0].astype(str).str.contains("cm|秒|m/s|%").any():
-        df = df.drop(index=0).reset_index(drop=True)
+    # 1列目をインデックスに設定
+    df.set_index(df.columns[0], inplace=True)
 
-    st.subheader("① データプレビュー")
+    st.subheader("① データプレビュー（先頭5行）")
     st.dataframe(df.head())
+
+    st.subheader("② 列名一覧")
+    st.write(df.columns.tolist())
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
