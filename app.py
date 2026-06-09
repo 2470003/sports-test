@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.title("個人順位 & 種目別順位アプリ（散布図付き）")
+st.title("個人順位 & 種目別順位アプリ（散布図付き・完全版）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -149,26 +149,23 @@ if uploaded:
         st.dataframe(result_df)
 
         # ============================================================
-        # ⑦ 散布図（男女別フィルタに対応）
+        # ⑦ 散布図（横軸＝最小〜最大、縦軸＝スコア）
         # ============================================================
-        st.subheader("⑦ 散布図（選んだ種目の全体分布）")
+        st.subheader("⑦ 散布図（スコア分布）")
 
-        # 散布図用データ
         scatter_df = df_filtered[[target_col]].dropna()
 
-        # ID を番号に変換（散布図用）
-        scatter_df = scatter_df.reset_index().reset_index().rename(columns={"index": "num"})
-
+        # 散布図作成
         fig, ax = plt.subplots(figsize=(8, 5))
-        ax.scatter(scatter_df["num"], scatter_df[target_col], alpha=0.7)
+
+        ax.scatter(scatter_df[target_col], scatter_df[target_col], alpha=0.6)
 
         ax.set_title(f"{target_col} の散布図（{gender_option}）")
-        ax.set_xlabel("ID（番号順）")
-        ax.set_ylabel(target_col)
+        ax.set_xlabel(f"{target_col}（最小〜最大）")
+        ax.set_ylabel("スコア")
 
-        # X 軸のラベルを ID に変更
-        ax.set_xticks(scatter_df["num"])
-        ax.set_xticklabels(scatter_df.iloc[:, 1], rotation=90)
+        # 横軸を最小〜最大に設定
+        ax.set_xlim(scatter_df[target_col].min(), scatter_df[target_col].max())
 
         st.pyplot(fig)
 
