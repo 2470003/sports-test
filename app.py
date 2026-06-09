@@ -11,7 +11,7 @@ font_path = "ipaexg.ttf"  # ← GitHub に置いたフォント
 font_manager.fontManager.addfont(font_path)
 plt.rcParams["font.family"] = "IPAexGothic"
 
-st.title("個人順位 & 種目別順位アプリ（色分けジッター散布図付き）")
+st.title("個人順位 & 種目別順位アプリ（順位×スコア散布図付き）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -74,7 +74,7 @@ if uploaded:
         st.dataframe(pd.DataFrame(result_list, columns=["種目", "スコア", "順位"]))
 
     # ============================================================
-    # ② 種目モード（色分けジッター散布図）
+    # ② 種目モード（順位×スコア散布図）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -123,18 +123,21 @@ if uploaded:
         st.dataframe(pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"]))
 
         # ============================================================
-        # ⑦ 男女色分けジッター散布図
+        # ⑦ 散布図（横＝順位 × 縦＝スコア）
         # ============================================================
-        st.subheader("⑦ 散布図（男女色分け＋ジッター）")
+        st.subheader("⑦ 散布図（順位 × スコア）")
 
         scatter_df = df_filtered[[target_col, "性別"]].dropna()
+
+        # 順位計算（小さい順＝上位）
+        scatter_df["順位"] = scatter_df[target_col].rank(method="min", ascending=True)
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
         # 男（青）
         male_df = scatter_df[scatter_df["性別"] == "男"]
         ax.scatter(
-            male_df[target_col] + np.random.normal(0, 0.03, size=len(male_df)),
+            male_df["順位"] + np.random.normal(0, 0.1, size=len(male_df)),
             male_df[target_col],
             color="#66CCFF",
             alpha=0.6,
@@ -144,20 +147,17 @@ if uploaded:
         # 女（薄い赤）
         female_df = scatter_df[scatter_df["性別"] == "女"]
         ax.scatter(
-            female_df[target_col] + np.random.normal(0, 0.03, size=len(female_df)),
+            female_df["順位"] + np.random.normal(0, 0.1, size=len(female_df)),
             female_df[target_col],
             color="#FF9999",
             alpha=0.6,
             label="女"
         )
 
-        ax.set_title(f"{target_col} の散布図（男女色分け）")
-        ax.set_xlabel(f"{target_col}（最小〜最大）")
+        ax.set_title(f"{target_col} の散布図（順位 × スコア）")
+        ax.set_xlabel("順位（1位＝左）")
         ax.set_ylabel("スコア")
         ax.legend()
-
-        ax.set_xlim(scatter_df[target_col].min() - 0.1,
-                    scatter_df[target_col].max() + 0.1)
 
         st.pyplot(fig)
 
