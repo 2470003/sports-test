@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.title("個人順位 & 種目別順位アプリ")
+st.title("個人順位 & 種目別順位アプリ（順位表示修正版）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
@@ -35,7 +35,7 @@ if uploaded:
     mode = st.radio("表示方法を選んでください", ["IDで表示", "種目で表示"])
 
     # ============================================================
-    # ① ID で表示するモード（既存機能）
+    # ① ID で表示するモード
     # ============================================================
     if mode == "IDで表示":
 
@@ -68,6 +68,8 @@ if uploaded:
 
         for col in numeric_cols:
             series = df_filtered[col].dropna()
+
+            # 並び替え（大きい方が良い）
             sorted_series = series.sort_values(ascending=False)
 
             my_score = df.loc[selected_id, col]
@@ -85,7 +87,7 @@ if uploaded:
         st.dataframe(result_df)
 
     # ============================================================
-    # ② 種目で表示するモード（新機能）
+    # ② 種目で表示するモード（上位/下位修正版）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -107,6 +109,8 @@ if uploaded:
         # 上位/下位切り替え
         st.subheader("⑤ 上位/下位を選択")
         order_option = st.radio("並び順", ["上位10人", "下位10人"])
+
+        # 上位 → 大きい順 / 下位 → 小さい順
         ascending_flag = True if order_option == "下位10人" else False
 
         # 並び替え
@@ -124,13 +128,23 @@ if uploaded:
 
             # 順位計算
             series = df_filtered[target_col].dropna()
+
+            # 上位 → 大きい順 / 下位 → 小さい順
             sorted_series = series.sort_values(ascending=ascending_flag)
+
             rank = sorted_series.index.get_loc(idx) + 1
             total = len(sorted_series)
 
+            # 上位 → 1/388 の形式  
+            # 下位 → 388/388 の形式  
+            if ascending_flag:  # 下位
+                rank_display = f"{total - rank + 1}/{total}"
+            else:  # 上位
+                rank_display = f"{rank}/{total}"
+
             gender = row["性別"] if has_gender else "-"
 
-            result.append([idx, gender, score, f"{rank}/{total}"])
+            result.append([idx, gender, score, rank_display])
 
         result_df = pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"])
         st.subheader("⑥ 結果表示")
@@ -138,4 +152,3 @@ if uploaded:
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
-
