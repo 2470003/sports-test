@@ -38,11 +38,11 @@ if uploaded:
 
         st.subheader("③ 表示対象（男女別）")
         if has_gender:
-            gender_option = st.radio("対象", ["総合", "男性", "女性"])
-            if gender_option == "男性":
-                df_filtered = df[df["性別"] == "男性"]
-            elif gender_option == "女性":
-                df_filtered = df[df["性別"] == "女性"]
+            gender_option = st.radio("対象", ["総合", "男", "女"])
+            if gender_option == "男":
+                df_filtered = df[df["性別"] == "男"]
+            elif gender_option == "女":
+                df_filtered = df[df["性別"] == "女"]
             else:
                 df_filtered = df
         else:
@@ -81,11 +81,11 @@ if uploaded:
     else:
         st.subheader("③ 表示対象（男女別）")
         if has_gender:
-            gender_option = st.radio("対象", ["総合", "男性", "女性"])
-            if gender_option == "男性":
-                df_filtered = df[df["性別"] == "男性"]
-            elif gender_option == "男性":
-                df_filtered = df[df["性別"] == "女性"]
+            gender_option = st.radio("対象", ["総合", "男", "女"])
+            if gender_option == "男":
+                df_filtered = df[df["性別"] == "男"]
+            elif gender_option == "男":
+                df_filtered = df[df["性別"] == "女"]
             else:
                 df_filtered = df
         else:
