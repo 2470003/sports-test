@@ -26,23 +26,42 @@ if uploaded:
     # --- 0 を除外（NaN に置換） ---
     df[numeric_cols] = df[numeric_cols].replace(0, np.nan)
 
-    # --- ID 選択 ---
-    st.subheader("② ID を選択")
-    id_list = df.index.tolist()
+    # --- 性別列があるか確認 ---
+    has_gender = "性別" in df.columns
+
+    st.subheader("② 表示対象を選択")
+
+    if has_gender:
+        gender_option = st.radio("対象を選んでください", ["総合", "男", "女"])
+
+        if gender_option == "男":
+            df_filtered = df[df["性別"] == "男"]
+        elif gender_option == "女":
+            df_filtered = df[df["性別"] == "女"]
+        else:
+            df_filtered = df
+    else:
+        st.info("性別列がないため、総合のみ表示します。")
+        df_filtered = df
+
+    # --- ID 一覧（性別フィルタ後） ---
+    id_list = df_filtered.index.tolist()
+
+    st.subheader("③ ID を選択")
     selected_id = st.selectbox("ID を選んでください", id_list)
 
     # --- 個人データ ---
-    st.subheader("③ 個人データ")
+    st.subheader("④ 個人データ")
     st.dataframe(df.loc[[selected_id]])
 
     # --- 各種目の順位計算 ---
-    st.subheader("④ 各種目の順位")
+    st.subheader("⑤ 各種目の順位")
 
     result_list = []
 
     for col in numeric_cols:
-        # その種目のデータ（0除外済み）
-        series = df[col].dropna()
+        # 性別フィルタ後のデータで順位計算
+        series = df_filtered[col].dropna()
 
         # 並び替え（大きい方が良いと仮定）
         sorted_series = series.sort_values(ascending=False)
@@ -67,4 +86,3 @@ if uploaded:
 
 else:
     st.info("CSV ファイルをアップロードしてください。")
-
