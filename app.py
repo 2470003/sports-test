@@ -75,7 +75,7 @@ if uploaded:
             my_score = df.loc[selected_id, col]
 
             if pd.isna(my_score):
-                result_list.append([col, "データなし", "-", "-"])
+                result_list.append([col, "データなし", "-"])
                 continue
 
             rank = sorted_series.index.get_loc(selected_id) + 1
@@ -126,18 +126,16 @@ if uploaded:
             if pd.isna(score):
                 continue
 
-            # 順位計算
+            # 全体の順位計算
             series = df_filtered[target_col].dropna()
-
-            # 上位 → 大きい順 / 下位 → 小さい順
             sorted_series = series.sort_values(ascending=ascending_flag)
 
             rank = sorted_series.index.get_loc(idx) + 1
             total = len(sorted_series)
 
-            # 上位 → 1/388 の形式  
-            # 下位 → 388/388 の形式  
+            # 正しい順位表示
             if ascending_flag:  # 下位
+                # 小さい順に並んでいるので rank=1 が最下位
                 rank_display = f"{total - rank + 1}/{total}"
             else:  # 上位
                 rank_display = f"{rank}/{total}"
