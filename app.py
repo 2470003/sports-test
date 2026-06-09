@@ -2,45 +2,40 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import font_manager
 
-st.title("個人順位 & 種目別順位アプリ（ジッター散布図付き）")
+# -------------------------
+# 日本語フォント設定（文字化け対策）
+# -------------------------
+font_path = "/usr/share/fonts/truetype/ipafont-gothic/ipagp.ttf"
+font_manager.fontManager.addfont(font_path)
+plt.rcParams["font.family"] = "IPAGothic"
+
+st.title("個人順位 & 種目別順位アプリ（色分けジッター散布図付き）")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
 if uploaded:
-    # 2行目（単位行）をスキップして読み込み
     df = pd.read_csv(uploaded, skiprows=[1])
-
-    # 1列目をインデックスに設定（ID）
     df.set_index(df.columns[0], inplace=True)
-
-    # ID の .0 を消す
     df.index = df.index.astype(str).str.replace(r"\.0$", "", regex=True)
 
     st.subheader("① データプレビュー")
     st.dataframe(df.head())
 
-    # 数値列（種目）
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
-
-    # 0 を除外（NaN に置換）
     df[numeric_cols] = df[numeric_cols].replace(0, np.nan)
 
-    # 性別列があるか確認
     has_gender = "性別" in df.columns
 
-    # -------------------------
-    # モード選択
-    # -------------------------
     st.subheader("② モード選択")
     mode = st.radio("表示方法を選んでください", ["IDで表示", "種目で表示"])
 
     # ============================================================
-    # ① ID で表示するモード
+    # ① ID モード
     # ============================================================
     if mode == "IDで表示":
 
-        # 性別フィルタ
         st.subheader("③ 表示対象（男女別）")
         if has_gender:
             gender_option = st.radio("対象", ["総合", "男", "女"])
@@ -53,28 +48,20 @@ if uploaded:
         else:
             df_filtered = df
 
-        # ID 選択
         st.subheader("④ ID を選択")
-        id_list = df_filtered.index.tolist()
-        selected_id = st.selectbox("ID を選んでください", id_list)
+        selected_id = st.selectbox("ID を選んでください", df_filtered.index.tolist())
 
-        # 個人データ
         st.subheader("⑤ 個人データ")
         st.dataframe(df.loc[[selected_id]])
 
-        # 各種目の順位
         st.subheader("⑥ 各種目の順位")
-
         result_list = []
 
         for col in numeric_cols:
             series = df_filtered[col].dropna()
-
-            # 上位＝小さい順
             sorted_series = series.sort_values(ascending=True)
 
             my_score = df.loc[selected_id, col]
-
             if pd.isna(my_score):
                 result_list.append([col, "データなし", "-"])
                 continue
@@ -84,11 +71,10 @@ if uploaded:
 
             result_list.append([col, my_score, f"{rank}/{total}"])
 
-        result_df = pd.DataFrame(result_list, columns=["種目", "スコア", "順位"])
-        st.dataframe(result_df)
+        st.dataframe(pd.DataFrame(result_list, columns=["種目", "スコア", "順位"]))
 
     # ============================================================
-    # ② 種目で表示するモード（ジッター散布図追加）
+    # ② 種目モード（色分けジッター散布図）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -103,74 +89,75 @@ if uploaded:
         else:
             df_filtered = df
 
-        # 種目選択
         st.subheader("④ 種目を選択")
         target_col = st.selectbox("種目を選んでください", numeric_cols)
 
-        # 上位/下位切り替え
         st.subheader("⑤ 上位/下位を選択")
         order_option = st.radio("並び順", ["上位10人", "下位10人"])
-
-        # 上位 → 小さい順 / 下位 → 大きい順
         ascending_flag = True if order_option == "上位10人" else False
 
-        # 並び替え
         df_sorted = df_filtered.sort_values(by=target_col, ascending=ascending_flag)
-
-        # 上位/下位10人
         top10 = df_sorted.head(10)
 
-        # 表示用データ作成
         result = []
         for idx, row in top10.iterrows():
             score = row[target_col]
             if pd.isna(score):
                 continue
 
-            # 全体の順位計算
             series = df_filtered[target_col].dropna()
             sorted_series = series.sort_values(ascending=ascending_flag)
 
             rank = sorted_series.index.get_loc(idx) + 1
             total = len(sorted_series)
 
-            # 正しい順位表示
-            if ascending_flag:  # 上位（小さい順）
+            if ascending_flag:
                 rank_display = f"{rank}/{total}"
-            else:  # 下位（大きい順）
+            else:
                 rank_display = f"{total - rank + 1}/{total}"
 
             gender = row["性別"] if has_gender else "-"
-
             result.append([idx, gender, score, rank_display])
 
-        result_df = pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"])
         st.subheader("⑥ 結果表示")
-        st.dataframe(result_df)
+        st.dataframe(pd.DataFrame(result, columns=["ID", "性別", "スコア", "順位"]))
 
         # ============================================================
-        # ⑦ ジッター散布図（密度が見える）
+        # ⑦ 男女色分けジッター散布図
         # ============================================================
-        st.subheader("⑦ 散布図（ジッター付き）")
+        st.subheader("⑦ 散布図（男女色分け＋ジッター）")
 
-        scatter_df = df_filtered[[target_col]].dropna()
+        scatter_df = df_filtered[[target_col, "性別"]].dropna()
 
-        # ジッター（横方向に少しズラす）
         jitter = np.random.normal(0, 0.02, size=len(scatter_df))
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
+        # 男（青）
+        male_df = scatter_df[scatter_df["性別"] == "男"]
         ax.scatter(
-            scatter_df[target_col] + jitter,  # 横に少しズラす
-            scatter_df[target_col],
-            alpha=0.5
+            male_df[target_col] + np.random.normal(0, 0.02, size=len(male_df)),
+            male_df[target_col],
+            color="#66CCFF",  # 水色
+            alpha=0.6,
+            label="男"
         )
 
-        ax.set_title(f"{target_col} の散布図（{gender_option}）")
+        # 女（薄い赤）
+        female_df = scatter_df[scatter_df["性別"] == "女"]
+        ax.scatter(
+            female_df[target_col] + np.random.normal(0, 0.02, size=len(female_df)),
+            female_df[target_col],
+            color="#FF9999",  # 薄い赤
+            alpha=0.6,
+            label="女"
+        )
+
+        ax.set_title(f"{target_col} の散布図（男女色分け）")
         ax.set_xlabel(f"{target_col}（最小〜最大）")
         ax.set_ylabel("スコア")
+        ax.legend()
 
-        # 横軸を最小〜最大に設定
         ax.set_xlim(scatter_df[target_col].min() - 0.1,
                     scatter_df[target_col].max() + 0.1)
 
