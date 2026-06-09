@@ -15,6 +15,9 @@ st.title("スポーツテスト測定")
 
 uploaded = st.file_uploader("CSVファイルをアップロードしてください", type="csv")
 
+# 大きい方が上位になる種目
+reverse_cols = ["CMJ", "DJ-跳躍高", "DJ-RSI"]
+
 if uploaded:
     df = pd.read_csv(uploaded, skiprows=[1])
     df.set_index(df.columns[0], inplace=True)
@@ -60,8 +63,11 @@ if uploaded:
         for col in numeric_cols:
             series = df_filtered[col].dropna()
 
-            # 同率順位（小さい順＝上位）
-            rank_series = df_filtered[col].rank(method="min", ascending=True)
+            # 種目ごとに昇順/降順を切り替え
+            ascending_flag = False if col in reverse_cols else True
+
+            # 同率順位（method="min"）
+            rank_series = df_filtered[col].rank(method="min", ascending=ascending_flag)
 
             my_score = df.loc[selected_id, col]
             if pd.isna(my_score):
@@ -76,7 +82,7 @@ if uploaded:
         st.dataframe(pd.DataFrame(result_list, columns=["種目", "スコア", "順位"]))
 
     # ============================================================
-    # ② 種目モード（同率順位対応）
+    # ② 種目モード（同率順位＋種目別昇降順対応）
     # ============================================================
     else:
         st.subheader("③ 表示対象（男女別）")
@@ -84,7 +90,7 @@ if uploaded:
             gender_option = st.radio("対象", ["総合", "男", "女"])
             if gender_option == "男":
                 df_filtered = df[df["性別"] == "男"]
-            elif gender_option == "男":
+            elif gender_option == "女":
                 df_filtered = df[df["性別"] == "女"]
             else:
                 df_filtered = df
@@ -94,18 +100,23 @@ if uploaded:
         st.subheader("④ 種目を選択")
         target_col = st.selectbox("種目を選んでください", numeric_cols)
 
+        # 種目ごとに昇順/降順を切り替え
+        ascending_flag = False if target_col in reverse_cols else True
+
         st.subheader("⑤ 上位/下位を選択")
         order_option = st.radio("並び順", ["上位10人", "下位10人"])
-        ascending_flag = True if order_option == "上位10人" else False
 
-        df_sorted = df_filtered.sort_values(by=target_col, ascending=ascending_flag)
+        # 上位 → ascending_flag のまま
+        # 下位 → ascending_flag を反転
+        sort_flag = ascending_flag if order_option == "上位10人" else not ascending_flag
+
+        df_sorted = df_filtered.sort_values(by=target_col, ascending=sort_flag)
         top10 = df_sorted.head(10)
-
-        result = []
 
         # 全員の順位（同率対応）
         rank_series = df_filtered[target_col].rank(method="min", ascending=ascending_flag)
 
+        result = []
         for idx, row in top10.iterrows():
             score = row[target_col]
             if pd.isna(score):
